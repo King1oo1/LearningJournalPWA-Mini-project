@@ -26,6 +26,6 @@ A Progressive Web App featuring an interactive learning journal and classic Snak
 - Mobile-responsive design
 
 ## 🔄 Flask Backend Notes
-- **Press refresh button** to see latest journal entries from Flask backend
+- **Press 🔄 Refresh Flask Data Button** to see latest journal entries from Flask backend
 - Real-time reflection storage and retrieval
 - RESTful API for CRUD operations
