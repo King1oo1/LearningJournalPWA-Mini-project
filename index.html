@@ -1,0 +1,288 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <!-- PWA Manifest -->
+<link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+
+<!-- Theme Color for Mobile -->
+<meta name="theme-color" content="#3498db">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="LearnJournal">
+
+<!-- Single Icon for all platforms -->
+<link rel="icon" href="{{ url_for('static', filename='images/icon.png') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='images/icon.png') }}">
+
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chandandeep Singh - Learning Journal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation will be inserted here by JavaScript -->
+
+    <main class="container">
+        <section class="hero">
+            <h1>Welcome to My Learning Journal</h1>
+            <p>This is my personal space where I document my journey through the Mobile Application Development course and showcase my projects.</p>
+            <div class="live-date">
+                <strong>Today's Date:</strong> <span id="live-date"></span>
+            </div>
+            <button id="theme-toggle" class="theme-btn">🌙 Dark Mode</button>
+        </section>
+
+         <!-- Enhanced Snake Game Section -->
+<section class="snake-game-section">
+    <div class="container">
+        <h2>🎮 Snake Game Challenge</h2>
+        <p>Take a break and play this classic Snake game with enhanced visuals! Compete for the highest score and see your name on the leaderboard.</p>
+
+        <div class="snake-game-container">
+            <!-- Welcome Screen -->
+            <div id="snake-welcome-screen" class="game-screen">
+                <div class="welcome-content">
+                    <h3>🐍 Snake Game</h3>
+                    <p>Enter your name to start playing!</p>
+                    <div class="name-input-container">
+                        <input type="text" id="player-name-input" placeholder="Your name" maxlength="20">
+                        <button id="start-game-btn" class="btn-primary control-btn" title="Start Game">▶️ Start Game</button>
+                    </div>
+                    <div class="game-preview">
+                        <canvas id="welcome-canvas" width="200" height="200"></canvas>
+                        <p>Use arrow keys or buttons to control the snake. Eat food to grow and score points!</p>
+                        <p class="mobile-note">📱 On mobile, use touch controls or the directional buttons!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Screen -->
+            <div id="snake-game-screen" class="game-screen" style="display: none;">
+                <div class="game-header">
+                    <div class="game-title">
+                        <h3>🐍 Snake Game</h3>
+                    </div>
+                    <div class="score-display">
+                        <div class="score-item">
+                            <span>Score: </span>
+                            <span id="current-score">0</span>
+                        </div>
+                        <div class="score-item">
+                            <span>High Score: </span>
+                            <span id="high-score">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="canvas-container">
+                    <canvas id="snake-canvas"></canvas>
+                </div>
+
+                <div class="game-controls">
+                    <div class="control-buttons">
+                        <button id="snake-start" class="control-btn" title="Start/Resume">▶️</button>
+                        <button id="snake-pause" class="control-btn" title="Pause" style="display: none;">⏸️</button>
+                        <button id="snake-restart" class="control-btn" title="Restart">🔄</button>
+                        <button id="snake-exit" class="control-btn" title="Exit">🖥️</button>
+                    </div>
+
+                    <div class="direction-controls">
+                        <div class="control-row">
+                            <button id="snake-up" class="direction-btn" title="Up">⬆️</button>
+                        </div>
+                        <div class="control-row">
+                            <button id="snake-left" class="direction-btn" title="Left">⬅️</button>
+                            <button id="snake-down" class="direction-btn" title="Down">⬇️</button>
+                            <button id="snake-right" class="direction-btn" title="Right">➡️</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div id="snake-game-over" class="game-screen" style="display: none;">
+                <div class="game-over-content">
+                    <h3>Game Over!</h3>
+                    <p>Well played, <span id="final-player-name">Player</span>!</p>
+                    <div class="final-score">
+                        Your score: <span id="final-score">0</span>
+                    </div>
+
+                    <div id="snake-high-score-form" class="high-score-form" style="display: none;">
+                        <h4>🎉 New High Score!</h4>
+                        <p>Your score has been submitted to the leaderboard!</p>
+                    </div>
+
+                    <div class="game-over-buttons">
+                        <button id="play-again-btn" class="btn-primary control-btn" title="Play Again">🔄 Play Again</button>
+                        <button id="back-to-menu-btn" class="btn-secondary control-btn" title="Back to Menu">🖥️ Back to Menu</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="leaderboard-container">
+                <div id="snake-leaderboard">
+                    <p style="text-align: center; color: #666; padding: 1rem;">Loading leaderboard...</p>
+                </div>
+                <div class="game-instructions">
+                    <h4>How to Play</h4>
+                    <ul>
+                        <li>Enter your name and click ▶️ to start</li>
+                        <li><strong>Desktop:</strong> Use arrow keys or directional buttons</li>
+                        <li><strong>Mobile:</strong> Use touch controls or directional buttons</li>
+                        <li>Eat the red food to grow and earn points</li>
+                        <li>Snake wraps around the screen edges</li>
+                        <li>⏸️ Pause, 🔄 Restart, 🖥️ Exit</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+        <section class="recent-posts">
+            <h2>Recent Journal Entries</h2>
+            <div class="posts-grid">
+
+
+        <!-- Week 7: PWA Enhancement -->
+        <article class="post-card">
+            <h3>Week 7: PWA Enhancement</h3>
+            <p>Enhanced the Learning Journal with Progressive Web App features including service worker for offline functionality, web app manifest for installability, and network status detection.</p>
+            <a href="{{ url_for('journal') }}">Read more</a>
+        </article>
+
+                <!-- Week 6: Flask Backend & PythonAnywhere -->
+                <article class="post-card">
+                    <h3>Week 6: Flask Backend & PythonAnywhere</h3>
+                    <p>Implemented Flask backend with RESTful API, deployed on PythonAnywhere. Added GET/POST/DELETE endpoints for reflections with frontend-backend integration.</p>
+                    <a href="{{ url_for('journal') }}">Read more</a>
+                </article>
+
+                <!-- Week 5: Python & JSON Backend -->
+                <article class="post-card">
+                    <h3>Week 5: Python & JSON Backend</h3>
+                    <p>Integrated Python and JSON for backend data storage. Created a Python script to manage journal entries and display them in the PWA through JavaScript fetch API.</p>
+                    <a href="{{ url_for('journal') }}">Read more</a>
+                </article>
+
+                <article class="post-card">
+                    <h3>Week 4: Web APIs</h3>
+                    <p>Exploring Storage API, Browser APIs (Clipboard, Validation), and Third-Party APIs (YouTube). Learning to make web applications more powerful and interactive.</p>
+                    <a href="{{ url_for('journal') }}">Read more</a>
+                </article>
+
+                <article class="post-card">
+                    <h3>Week 3: JavaScript & DOM</h3>
+                    <p>Learning JavaScript DOM manipulation, event handling, and making web pages interactive. Exploring reusable navigation, theme switching, and form validation.</p>
+                    <a href="{{ url_for('journal') }}">Read more</a>
+                </article>
+
+                <article class="post-card">
+                    <h3>Week 2: Frontend Fundamentals</h3>
+                    <p>Exploring HTML, CSS, and responsive design principles for mobile applications. Mobile-first approach and Flexbox layout techniques.</p>
+                    <a href="{{ url_for('journal') }}">Read more</a>
+                </article>
+
+                <article class="post-card">
+                    <h3>Week 1: Introduction to Mobile Development</h3>
+                    <p>Getting started with mobile development concepts, Progressive Web Apps, and setting up the development environment and project structure.</p>
+                    <a href="{{ url_for('journal') }}">Read more</a>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Chandandeep Singh. All rights reserved.</p>
+    </footer>
+
+    <!-- ALL THE JS FILES - IN CORRECT ORDER -->
+    <script src="{{ url_for('static', filename='js/storage.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/browser.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/thirdparty.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+
+
+
+   <script>
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('{{ url_for("static", filename="js/sw.js") }}')
+                .then(function(registration) {
+                    console.log('✅ ServiceWorker registration successful with scope: ', registration.scope);
+                })
+                .catch(function(error) {
+                    console.log('❌ ServiceWorker registration failed: ', error);
+                });
+        });
+    }
+
+    // Online/Offline Detection (Extra Feature)
+    function updateOnlineStatus() {
+        const statusElement = document.getElementById('network-status');
+        if (statusElement) {
+            if (navigator.onLine) {
+                statusElement.innerHTML = '🟢 Online';
+                statusElement.style.background = 'linear-gradient(135deg, #27ae60 0%, #229954 100%)';
+            } else {
+                statusElement.innerHTML = '🔴 Offline - Using cached data';
+                statusElement.style.background = 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)';
+            }
+        }
+    }
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', updateOnlineStatus);
+
+    // PWA Installation Prompt
+    let deferredPrompt;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        showInstallPromotion();
+    });
+
+    function showInstallPromotion() {
+        const installBtn = document.createElement('button');
+        installBtn.innerHTML = '📱 Install App';
+        installBtn.className = 'btn-primary';
+        installBtn.style.margin = '0.5rem';
+        installBtn.onclick = installPWA;
+
+        const hero = document.querySelector('.hero');
+        if (hero) {
+            hero.appendChild(installBtn);
+        }
+    }
+
+    async function installPWA() {
+        if (!deferredPrompt) return;
+
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+
+        if (outcome === 'accepted') {
+            console.log('✅ User accepted the install prompt');
+            showSuccessMessage('App installed successfully! 🎉');
+        } else {
+            console.log('❌ User dismissed the install prompt');
+        }
+
+        deferredPrompt = null;
+    }
+</script>
+
+
+<script src="{{ url_for('static', filename='js/snake.js') }}"></script>
+</body>
+</html>
