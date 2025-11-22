@@ -50,6 +50,12 @@ def save_snake_scores(scores):
 def serve_sw():
     return send_from_directory('static/js', 'sw.js', mimetype='application/javascript')
 
+# Serve manifest.json
+@app.route('/manifest.json')
+def serve_manifest():
+    return send_from_directory('static', 'manifest.json', mimetype='application/json')
+
+
 # Serve offline page
 @app.route('/offline')
 def offline():
@@ -86,6 +92,15 @@ def add_reflection():
         data = request.get_json()
         if not data:
             return jsonify({"error": "No data provided"}), 400
+
+# Validate fields
+        name = data.get("name", "Anonymous").strip()
+        reflection_text = data.get("reflection", "").strip()
+
+        if not reflection_text:
+            return jsonify({"error": "Reflection content cannot be empty"}), 400
+
+
 
         new_reflection = {
             "name": data.get("name", "Anonymous"),
@@ -137,28 +152,28 @@ def add_snake_score():
         data = request.get_json()
         if not data:
             return jsonify({"success": False, "error": "No data provided"}), 400
-            
+
         new_score = {
             "name": data.get("name", "Anonymous"),
             "score": data.get("score", 0),
             "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
-        
+
         # Load existing scores
         scores = load_snake_scores()
-        
+
         # Add new score and sort
         scores.append(new_score)
         scores.sort(key=lambda x: x['score'], reverse=True)
-        
+
         # Keep only top 10 scores
         scores = scores[:10]
-        
+
         # Save back to file
         save_snake_scores(scores)
-        
+
         return jsonify({"success": True})
-        
+
     except Exception as e:
         print(f"Error saving snake score: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -167,6 +182,16 @@ def add_snake_score():
 @app.route("/health")
 def health_check():
     return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
+
+# ERROR HANDLERS FOR PWA
+@app.errorhandler(404)
+def not_found(error):
+    return render_template('offline.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({"error": "Internal server error"}), 500
+
 
 # Serve snake_scores.json statically for fallback
 @app.route("/static/snake_scores.json")
