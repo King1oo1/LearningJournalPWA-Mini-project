@@ -323,86 +323,88 @@
         <p>&copy; 2025 Chandandeep Singh. All rights reserved.</p>
     </footer>
 
-    <!-- ALL THE JS FILES - IN CORRECT ORDER -->
+   <!-- ALL THE JS FILES - IN CORRECT ORDER -->
     <script src="{{ url_for('static', filename='js/storage.js') }}"></script>
     <script src="{{ url_for('static', filename='js/browser.js') }}"></script>
     <script src="{{ url_for('static', filename='js/thirdparty.js') }}"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
+    <script>
+        // ===== SERVICE WORKER  =====
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                // Use absolute path - CRITICAL
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('✅ ServiceWorker registered successfully with scope:', registration.scope);
 
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('🔄 New Service Worker found...');
 
+                            newWorker.addEventListener('statechange', () => {
+                                console.log('🔄 Service Worker state:', newWorker.state);
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('🔄 New content available!');
+                                }
+                            });
+                        });
+                    })
+                    .catch(function(error) {
+                        console.log('❌ ServiceWorker registration failed:', error);
+                    });
 
-  <script>
-    // Register Service Worker
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('{{ url_for("static", filename="js/sw.js") }}')
-                .then(function(registration) {
-                    console.log('✅ ServiceWorker registration successful with scope: ', registration.scope);
-                })
-                .catch(function(error) {
-                    console.log('❌ ServiceWorker registration failed: ', error);
+                // Handle controller changes
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (!refreshing) {
+                        refreshing = true;
+                        console.log('🔄 Controller changed - reloading page');
+                        window.location.reload();
+                    }
                 });
-        });
-    }
+            });
+        }
 
-    // Online/Offline Detection (Extra Feature)
-    function updateOnlineStatus() {
-        const statusElement = document.getElementById('network-status');
-        if (statusElement) {
-            if (navigator.onLine) {
-                statusElement.innerHTML = '🟢 Online';
-                statusElement.style.background = 'linear-gradient(135deg, #27ae60 0%, #229954 100%)';
-            } else {
-                statusElement.innerHTML = '🔴 Offline - Using cached data';
-                statusElement.style.background = 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)';
+        // ===== ONLINE/OFFLINE DETECTION =====
+        function updateOnlineStatus() {
+            const statusElement = document.getElementById('network-status');
+            if (statusElement) {
+                if (navigator.onLine) {
+                    statusElement.innerHTML = '🟢 Online';
+                    statusElement.style.background = 'linear-gradient(135deg, #27ae60 0%, #229954 100%)';
+                    // Auto-hide after 3 seconds when online
+                    setTimeout(() => {
+                        if (navigator.onLine && statusElement.innerHTML === '🟢 Online') {
+                            statusElement.style.display = 'none';
+                        }
+                    }, 3000);
+                } else {
+                    statusElement.innerHTML = '🔴 Offline - Using cached content';
+                    statusElement.style.background = 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)';
+                    statusElement.style.display = 'block';
+                }
             }
         }
-    }
 
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
+        // Initialize online/offline detection
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        document.addEventListener('DOMContentLoaded', updateOnlineStatus);
 
-    // Initialize on load
-    document.addEventListener('DOMContentLoaded', updateOnlineStatus);
+        // ===== PWA INSTALLATION =====
+        let deferredPrompt;
 
-    // PWA Installation Prompt
-    let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('📱 PWA install prompt available');
+        });
 
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        showInstallPromotion();
-    });
+        // Make functions globally available
+        window.updateOnlineStatus = updateOnlineStatus;
+    </script>
 
-    function showInstallPromotion() {
-        const installBtn = document.createElement('button');
-        installBtn.innerHTML = '📱 Install App';
-        installBtn.className = 'btn-primary';
-        installBtn.style.margin = '0.5rem';
-        installBtn.onclick = installPWA;
-
-        const hero = document.querySelector('.hero');
-        if (hero) {
-            hero.appendChild(installBtn);
-        }
-    }
-
-    async function installPWA() {
-        if (!deferredPrompt) return;
-
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-
-        if (outcome === 'accepted') {
-            console.log('✅ User accepted the install prompt');
-            showSuccessMessage('App installed successfully! 🎉');
-        } else {
-            console.log('❌ User dismissed the install prompt');
-        }
-
-        deferredPrompt = null;
-    }
-</script>
 </body>
 </html>
