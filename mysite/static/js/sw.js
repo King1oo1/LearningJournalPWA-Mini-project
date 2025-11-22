@@ -1,47 +1,62 @@
-// static/js/sw.js - Service Worker for PWA Offline Support
+// static/js/sw.js - SERVICE WORKER 
 
-const CACHE_NAME = 'learning-journal-v1.7';
-const STATIC_CACHE = 'static-cache-v1';
-const DYNAMIC_CACHE = 'dynamic-cache-v1';
+const CACHE_NAME = 'learning-journal-offline-fixed-v4';
+const STATIC_CACHE = 'static-v4';
+const DYNAMIC_CACHE = 'dynamic-v4';
 
-// Assets to cache during install
-const STATIC_ASSETS = [
+// ALL navigation routes that need to be cached
+const NAVIGATION_ROUTES = [
     '/',
+    '/journal',
+    '/about', 
+    '/projects',
+    '/offline'
+];
+
+// Static assets
+const STATIC_ASSETS = [
     '/static/css/style.css',
     '/static/js/script.js',
     '/static/js/storage.js',
     '/static/js/browser.js',
+    '/static/js/snake.js',
     '/static/js/thirdparty.js',
     '/static/images/icon.png',
-    '/static/manifest.json'  // Updated path
+    '/static/manifest.json'
 ];
 
-// API routes to cache
-const API_ROUTES = [
-    '/api/reflections'
-];
-
-// Install event - cache static assets
+// Install - Cache ALL navigation routes
 self.addEventListener('install', (event) => {
-    console.log('🔄 Service Worker installing...');
+    console.log('🚀 Service Worker installing - caching navigation routes...');
     
     event.waitUntil(
         caches.open(STATIC_CACHE)
             .then((cache) => {
-                console.log('📦 Caching static assets');
-                return cache.addAll(STATIC_ASSETS);
+                console.log('📦 Caching navigation routes:', NAVIGATION_ROUTES);
+                
+                // Cache navigation routes first
+                return Promise.all(
+                    NAVIGATION_ROUTES.map(route => {
+                        return cache.add(route).catch(err => {
+                            console.warn(`Could not cache ${route}:`, err);
+                            return Promise.resolve(); // Continue even if one fails
+                        });
+                    })
+                ).then(() => {
+                    console.log('📦 Caching static assets...');
+                    return cache.addAll(STATIC_ASSETS).catch(err => {
+                        console.warn('Some assets failed to cache:', err);
+                    });
+                });
             })
             .then(() => {
-                console.log('✅ Service Worker installed');
-                return self.skipWaiting();
-            })
-            .catch((error) => {
-                console.error('❌ Cache installation failed:', error);
+                console.log('✅ All routes cached successfully!');
+                return self.skipWaiting(); // Activate immediately
             })
     );
 });
 
-// Activate event - clean up old caches
+// Activate - Clean up old caches
 self.addEventListener('activate', (event) => {
     console.log('🔄 Service Worker activating...');
     
@@ -49,26 +64,30 @@ self.addEventListener('activate', (event) => {
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((cacheName) => {
-                    if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE && cacheName !== CACHE_NAME) {
+                    if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
                         console.log('🗑️ Deleting old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
             );
         }).then(() => {
-            console.log('✅ Service Worker activated');
-            return self.clients.claim();
+            console.log('✅ Service Worker ready for offline navigation!');
+            return self.clients.claim(); // Take control immediately
         })
     );
 });
 
-// Fetch event - serve from cache or network
+// Fetch - Handle ALL requests
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
     // Skip non-GET requests
-    if (request.method !== 'GET') {
+    if (request.method !== 'GET') return;
+
+    // Handle navigation requests (HTML pages)
+    if (request.headers.get('Accept')?.includes('text/html')) {
+        event.respondWith(handleNavigationRequest(request));
         return;
     }
 
@@ -78,141 +97,72 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Handle page navigation requests
-    if (request.headers.get('Accept')?.includes('text/html')) {
-        event.respondWith(handlePageRequest(request));
-        return;
-    }
-
-    // Handle static asset requests
+    // Handle static assets
     event.respondWith(handleStaticRequest(request));
 });
 
-// Strategy for API requests: Network first, then cache
+// STRATEGY FOR NAVIGATION - CRITICAL FIX
+async function handleNavigationRequest(request) {
+    const cache = await caches.open(STATIC_CACHE);
+    const url = new URL(request.url);
+
+    console.log('🧭 Handling navigation to:', url.pathname);
+
+    try {
+        // FIRST: Try network for fresh content
+        const networkResponse = await fetch(request);
+        
+        if (networkResponse.ok) {
+            // Cache the successful response
+            cache.put(request, networkResponse.clone());
+            console.log('✅ Served from network:', url.pathname);
+            return networkResponse;
+        }
+    } catch (error) {
+        console.log('🌐 Network failed, trying cache for:', url.pathname);
+        
+        // SECOND: Try cache when network fails
+        const cachedResponse = await cache.match(request);
+        
+        if (cachedResponse) {
+            console.log('✅ Served from cache:', url.pathname);
+            return cachedResponse;
+        }
+
+        // THIRD: Try alternative URL formats
+        const altUrls = [
+            request.url,
+            url.pathname,
+            url.pathname + '/',
+            url.pathname.replace(/\/$/, '') 
+        ];
+
+        for (const altUrl of altUrls) {
+            const altCached = await cache.match(altUrl);
+            if (altCached) {
+                console.log('✅ Served from alternative URL:', altUrl);
+                return altCached;
+            }
+        }
+
+        // FOURTH: If root path, try index
+        if (url.pathname === '/') {
+            const indexCached = await cache.match('/');
+            if (indexCached) {
+                console.log('✅ Served root from cache');
+                return indexCached;
+            }
+        }
+    }
+
+    // FINAL FALLBACK: Serve offline page
+    console.log('❌ No cache found, serving offline page');
+    return serveOfflinePage();
+}
+
+// API requests strategy
 async function handleApiRequest(request) {
     const cache = await caches.open(DYNAMIC_CACHE);
-    
-    try {
-        // Try network first
-        const networkResponse = await fetch(request);
-        
-        // Clone and cache the successful response
-        if (networkResponse.ok) {
-            const responseClone = networkResponse.clone();
-            cache.put(request, responseClone);
-        }
-        
-        return networkResponse;
-    } catch (error) {
-        console.log('🌐 Network failed for API, trying cache...', error);
-        
-        // Try to serve from cache
-        const cachedResponse = await cache.match(request);
-        if (cachedResponse) {
-            return cachedResponse;
-        }
-        
-        // Return offline response for API
-        return new Response(
-            JSON.stringify({ 
-                message: 'You are offline. Please check your connection.',
-                reflections: [] 
-            }),
-            { 
-                status: 200,
-                headers: { 'Content-Type': 'application/json' }
-            }
-        );
-    }
-}
-
-// Strategy for page requests: Cache first, then network
-async function handlePageRequest(request) {
-    const cache = await caches.open(STATIC_CACHE);
-    
-    try {
-        // Try cache first
-        const cachedResponse = await cache.match(request);
-        if (cachedResponse) {
-            return cachedResponse;
-        }
-        
-        // Fallback to network
-        const networkResponse = await fetch(request);
-        return networkResponse;
-    } catch (error) {
-        console.log('🌐 Network failed for page, serving offline page...');
-        
-        // Serve custom offline page
-        return new Response(
-            `
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Offline - Learning Journal</title>
-                <style>
-                    body { 
-                        font-family: 'Segoe UI', sans-serif; 
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                        color: white; 
-                        margin: 0; 
-                        padding: 2rem; 
-                        min-height: 100vh;
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: center;
-                        align-items: center;
-                        text-align: center;
-                    }
-                    .offline-container { 
-                        background: rgba(255,255,255,0.1); 
-                        padding: 3rem; 
-                        border-radius: 20px; 
-                        backdrop-filter: blur(10px);
-                        max-width: 500px;
-                    }
-                    h1 { margin-bottom: 1rem; }
-                    p { margin-bottom: 2rem; opacity: 0.9; }
-                    button { 
-                        background: white; 
-                        color: #667eea; 
-                        border: none; 
-                        padding: 1rem 2rem; 
-                        border-radius: 25px; 
-                        font-weight: bold; 
-                        cursor: pointer;
-                        transition: transform 0.3s ease;
-                    }
-                    button:hover { transform: translateY(-2px); }
-                </style>
-            </head>
-            <body>
-                <div class="offline-container">
-                    <h1>📶 You're Offline</h1>
-                    <p>Don't worry! You can still view your cached journal entries. Some features may be limited until you're back online.</p>
-                    <button onclick="window.location.reload()">🔄 Retry Connection</button>
-                </div>
-            </body>
-            </html>
-            `,
-            { 
-                status: 200,
-                headers: { 'Content-Type': 'text/html' }
-            }
-        );
-    }
-}
-
-// Strategy for static assets: Cache first, then network
-async function handleStaticRequest(request) {
-    const cache = await caches.open(STATIC_CACHE);
-    
-    const cachedResponse = await cache.match(request);
-    if (cachedResponse) {
-        return cachedResponse;
-    }
     
     try {
         const networkResponse = await fetch(request);
@@ -221,50 +171,103 @@ async function handleStaticRequest(request) {
         }
         return networkResponse;
     } catch (error) {
-        // If both cache and network fail, you might return a fallback
-        return new Response('Network error happened', {
-            status: 408,
-            headers: { 'Content-Type': 'text/plain' },
+        const cachedResponse = await cache.match(request);
+        if (cachedResponse) {
+            return cachedResponse;
+        }
+        // Return empty data for offline
+        return new Response(
+            JSON.stringify({ reflections: [] }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+    }
+}
+
+// Static assets strategy
+async function handleStaticRequest(request) {
+    const cache = await caches.open(STATIC_CACHE);
+    
+    const cachedResponse = await cache.match(request);
+    if (cachedResponse) return cachedResponse;
+    
+    try {
+        const networkResponse = await fetch(request);
+        if (networkResponse.ok) {
+            cache.put(request, networkResponse.clone());
+        }
+        return networkResponse;
+    } catch (error) {
+        return new Response('Asset not available offline', {
+            status: 408, headers: { 'Content-Type': 'text/plain' }
         });
     }
 }
 
-// Background sync for offline reflections
-self.addEventListener('sync', (event) => {
-    if (event.tag === 'background-sync-reflections') {
-        console.log('🔄 Background sync triggered');
-        event.waitUntil(doBackgroundSync());
-    }
-});
+// Enhanced offline page
+async function serveOfflinePage() {
+    const cache = await caches.open(STATIC_CACHE);
+    const offlinePage = await cache.match('/offline');
+    
+    if (offlinePage) return offlinePage;
 
-async function doBackgroundSync() {
-    console.log('🔄 Syncing pending reflections...');
-    // Implementation would depend on your specific sync needs
+    // Create comprehensive offline page
+    return new Response(
+        `<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Offline - Learning Journal</title>
+            <style>
+                body { 
+                    font-family: 'Segoe UI', sans-serif; 
+                    background: #2c3e50; 
+                    color: white; 
+                    margin: 0; 
+                    padding: 2rem;
+                    text-align: center;
+                }
+                .container { 
+                    max-width: 500px; 
+                    margin: 2rem auto; 
+                    padding: 2rem; 
+                    background: rgba(255,255,255,0.1); 
+                    border-radius: 10px; 
+                }
+                h1 { color: #e74c3c; }
+                button { 
+                    background: #3498db; 
+                    color: white; 
+                    border: none; 
+                    padding: 1rem 2rem; 
+                    margin: 0.5rem; 
+                    border-radius: 5px; 
+                    cursor: pointer; 
+                }
+                .nav { margin: 2rem 0; }
+                .nav a { 
+                    color: #3498db; 
+                    margin: 0 1rem; 
+                    text-decoration: none; 
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>📶 You're Offline</h1>
+                <p>But don't worry! Your Learning Journal can still work offline.</p>
+                <div class="nav">
+                    <a href="/">Home</a>
+                    <a href="/journal">Journal</a>
+                    <a href="/about">About</a>
+                    <a href="/projects">Projects</a>
+                </div>
+                <button onclick="window.location.reload()">Retry Connection</button>
+                <button onclick="window.location.href='/'">Go Home</button>
+            </div>
+        </body>
+        </html>`,
+        { status: 200, headers: { 'Content-Type': 'text/html' } }
+    );
+
 }
-
-// Push notifications (extra feature)
-self.addEventListener('push', (event) => {
-    if (!event.data) return;
-    
-    const data = event.data.json();
-    const options = {
-        body: data.body || 'New update available!',
-        icon: '/static/images/icon.png',
-        badge: '/static/images/icon.png',
-        vibrate: [100, 50, 100],
-        data: {
-            url: data.url || '/'
-        }
-    };
-    
-    event.waitUntil(
-        self.registration.showNotification(data.title || 'Learning Journal', options)
-    );
-});
-
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-    event.waitUntil(
-        clients.openWindow(event.notification.data.url)
-    );
-});
