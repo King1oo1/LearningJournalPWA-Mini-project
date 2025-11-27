@@ -1,10 +1,9 @@
-// js/script.js - Main Application Logic for Lab 7: PWA Enhancement
+// js/script.js - Main Application Logic: PWA Enhancement
 
 // ===== GLOBAL VARIABLES =====
 let deferredPrompt = null;
 
 // ===== IMMEDIATE THEME SETUP =====
-// Set theme immediately to prevent flash
 (function() {
     console.log('Setting initial theme immediately...');
     const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
@@ -205,7 +204,7 @@ function toggleEditMode(entry) {
     }
 }
 
-// ===== ENHANCED DELETE FUNCTIONALITY - FIXED =====
+// ===== ENHANCED DELETE FUNCTIONALITY =====
 function initDeleteFunctionality() {
     console.log('Initializing delete functionality...');
     
@@ -430,7 +429,7 @@ function createLocalJournalEntry(title, content, date, entryId = null) {
     `;
 }
 
-// ===== COLLAPSIBLE SECTIONS - FIXED =====
+// ===== COLLAPSIBLE SECTIONS =====
 function initCollapsibleSections() {
     console.log('Initializing collapsible sections...');
     
@@ -690,7 +689,7 @@ function updateNetworkStatus() {
 
 // ===== IMPROVED PWA INSTALL PROMPT =====
 function showPWAInstallPrompt() {
-    // Check if install prompt already exists
+    // Checking if install prompt already exists
     if (document.querySelector('.pwa-install-section')) return;
     
     const installSection = document.createElement('div');
@@ -802,7 +801,7 @@ async function installPWA() {
     deferredPrompt = null;
 }
 
-// Check if we should show the install prompt - UPDATED WITH 5-MINUTE COOLDOWN
+// Checking if we should show the install prompt - UPDATED WITH 5-MINUTE COOLDOWN
 function shouldShowInstallPrompt() {
     // Don't show if already installed
     if (isRunningStandalone() || localStorage.getItem('pwaInstalled') === 'true') {
@@ -810,7 +809,7 @@ function shouldShowInstallPrompt() {
         return false;
     }
     
-    // Check if within 5-minute cooldown period
+    // Checking if within 5-minute cooldown period
     const dismissalTime = localStorage.getItem('pwaInstallDismissed');
     if (dismissalTime) {
         const currentTime = Date.now();
@@ -832,7 +831,7 @@ function shouldShowInstallPrompt() {
     return true;
 }
 
-// Force show install prompt (for testing)
+// Force show install prompt
 function forceShowInstallPrompt() {
     // Clear any dismissal flags
     localStorage.removeItem('pwaInstallDismissed');
@@ -1010,7 +1009,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ===== GLOBAL EVENT LISTENERS =====
-// Listen for the beforeinstallprompt event - MOVED TO GLOBAL SCOPE
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
@@ -1349,4 +1347,5 @@ window.dismissPWAInstall = dismissPWAInstall;
 window.showPWAInstallPrompt = showPWAInstallPrompt;
 window.updateNetworkStatus = updateNetworkStatus;
 window.shouldShowInstallPrompt = shouldShowInstallPrompt;
+
 window.forceShowInstallPrompt = forceShowInstallPrompt;
