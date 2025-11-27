@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 
-# Use backend folder - this script is already in backend directory
+# Use backend folder 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE_DIR, "reflections.json")
 
@@ -197,4 +197,5 @@ if __name__ == "__main__":
         print(f"   Current directory: {current_dir}")
         print("   Please move this script to the backend folder")
     
+
     main()
