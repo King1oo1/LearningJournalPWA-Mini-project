@@ -1,7 +1,4 @@
 // js/browser.js - Browser API Functions
-
-// js/browser.js - Browser API Functions
-
 // ===== BROWSER API: CLIPBOARD API =====
 function initClipboardAPI() {
     console.log('Initializing Clipboard API...');
