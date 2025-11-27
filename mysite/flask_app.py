@@ -8,7 +8,7 @@ app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKEND_DIR = os.path.join(BASE_DIR, "backend")
 
-# Create backend directory if it doesn't exist
+# Create backend directory 
 if not os.path.exists(BACKEND_DIR):
     os.makedirs(BACKEND_DIR)
 
@@ -45,7 +45,7 @@ def save_snake_scores(scores):
     with open(SNAKE_SCORES_FILE, "w", encoding='utf-8') as f:
         json.dump(scores, f, indent=4)
 
-# Serve service worker with correct MIME type
+# Serve service worker
 @app.route('/sw.js')
 def serve_sw():
     return send_from_directory('static/js', 'sw.js', mimetype='application/javascript')
@@ -200,3 +200,4 @@ def serve_snake_scores():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
