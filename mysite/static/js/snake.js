@@ -1,6 +1,4 @@
-
-
-// static/js/snake.js
+// static/js/snake.js - for the Snake game
 class SnakeGame {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
@@ -598,7 +596,7 @@ class SnakeGame {
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         this.ctx.fillRect(head.x * this.gridSize + 2, head.y * this.gridSize + 2, this.gridSize - 5, 3);
 
-        // IMPROVED EYES - More detailed and expressive
+        // IMPROVED EYES 
         this.drawEnhancedEyes(head);
     }
 
@@ -611,7 +609,7 @@ class SnakeGame {
         this.ctx.fillStyle = 'white';
 
         if (this.dx === 1) { // Moving right
-            // Right eye (facing direction)
+            // Right eye 
             this.ctx.fillRect((head.x * this.gridSize) + this.gridSize - eyeOffset - 1, (head.y * this.gridSize) + eyeOffset, eyeSize, eyeSize);
             // Left eye
             this.ctx.fillRect((head.x * this.gridSize) + this.gridSize - eyeOffset - 1, (head.y * this.gridSize) + this.gridSize - eyeOffset - eyeSize, eyeSize, eyeSize);
@@ -1067,3 +1065,4 @@ document.addEventListener('DOMContentLoaded', function() {
     // Make game globally available
     window.snakeGame = snakeGame;
 });
+
